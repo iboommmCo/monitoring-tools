@@ -36,7 +36,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: sjc.vultrcr.com/iboommmcr/monitoring-tools:${{ steps.package-version.outputs.current-version}}-${{github.sha}}
+          tags: sjc.vultrcr.com/iboommmcr/monitoring-tools:${{ steps.package-version.outputs.current-version}}
 
   # helm:
   #   name: Helm
