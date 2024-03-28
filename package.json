@@ -1,0 +1,13 @@
+{
+  "name": "iboommm-devops-monotoring",
+  "version": "1.0.0",
+  "author": "ibommm",
+  "homepage": "https://ibommm.com/",
+  "private": true,
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "axios": "^1.6.8",
+    "body-parser": "^1.20.2",
+    "express": "^4.19.2"
+  }
+}
