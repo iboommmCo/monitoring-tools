@@ -99,6 +99,23 @@ app.get("/api/v1/jobs/:namespace", authenticateToken, async (req, res) => {
   }
 });
 
+// Route to get logs for a specific pod
+app.get('/api/v1/pods/:namespace/:podName/logs', authenticateToken, async (req, res) => {
+  const namespace = req.params.namespace;
+  const podName = req.params.podName;
+
+  try {
+      // Fetch logs for the pod
+      const logsResponse = await k8sApi.readNamespacedPodLog(podName, namespace);
+      const logs = logsResponse.body;
+
+      res.send(logs);
+  } catch (error) {
+      console.error('Error fetching logs for pod:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Route to get events related to pods
 app.get('/api/v1/events/:namespace/:pod', authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
