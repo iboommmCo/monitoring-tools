@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
   res.json({ status: "service is running." });
 });
 
-// Route to get pods grouped by deployment with events
+// Route to get pod details
 app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
 
@@ -52,9 +52,13 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
     // Fetch pods and events
     const podsResponse = await k8sApi.listNamespacedPod(namespace);
     for (const pod of podsResponse.body.items) {
-      const deploymentName = pod.metadata.ownerReferences.find(
-        (ref) => ref.kind === "Deployment"
-      ).name;
+      const deploymentName =
+        pod.metadata.ownerReferences && pod.metadata.ownerReferences.length > 0
+          ? pod.metadata.ownerReferences.find(
+              (ref) => ref.kind === "Deployment"
+            ).name
+          : "Unknown Deployment";
+
       const podDetails = {
         name: pod.metadata.name,
         image: pod.spec.containers[0].image,
