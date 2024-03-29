@@ -40,6 +40,7 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
         name: pod.metadata.name,
         image: pod.spec.containers[0].image,
         creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
+        pod
       };
       pods.push(podDetails);
     }
