@@ -28,22 +28,31 @@ app.get("/", (req, res) => {
   res.json({ status: "service is running." });
 });
 
+
+app.get("/readiness", (req, res) => {
+  res.json({ status: true });
+});
+
+app.get("/liveness", (req, res) => {
+  res.json({ status: true });
+});
+
 // Route to get pod details
 app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
-  const podsResponse = await k8sApi.listNamespacedPod(namespace);
-  const pods = [];
+
   try {
-    for (const pod of podsResponse.body.items) {
-      const podDetails = {
-        name: pod.metadata.name,
-        image: pod.spec.containers[0].image,
-        creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
-        pod
-      };
-      pods.push(podDetails);
-    }
-    res.json({ ...pods });
+    const podsResponse = await k8sApi.listNamespacedPod(namespace);
+    const pods = podsResponse.body.items.map((pod) => ({
+      name: pod.metadata.name,
+      image: pod.spec.containers[0].image,
+      annotations: deployment.metadata.annotations,
+      labels: deployment.metadata.labels,
+      namespace: deployment.metadata.namespace,
+      pod,
+      creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
+    }));
+    res.json(pods);
   } catch (error) {
     console.error("Error fetching pods:", error);
     res.status(500).json({ error: "Internal server error" });
