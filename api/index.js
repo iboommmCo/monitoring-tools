@@ -38,10 +38,21 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
     const pods = podsResponse.body.items.map((pod) => ({
       name: pod.metadata.name,
       image: pod.spec.containers[0].image,
-      meta: pod.metadata,
+      annotations: pod.metadata.annotations,
+      labels: pod.metadata.labels,
+      namespace: pod.metadata.namespace,
       creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
     }));
-    res.json(pods);
+     // Fetch events related to pods
+     const eventsResponse = await k8sApi.listNamespacedEvent(namespace);
+     const events = eventsResponse.body.items.map(event => ({
+         message: event.message,
+         reason: event.reason,
+         type: event.type,
+         timestamp: event.lastTimestamp,
+     }));
+
+    res.json({...pods, events});
   } catch (error) {
     console.error("Error fetching pods:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -63,7 +74,9 @@ app.get(
         name: deployment.metadata.name,
         replicas: deployment.spec.replicas,
         availableReplicas: deployment.status.availableReplicas,
-        meta: deployment.metadata,
+        annotations: deployment.metadata.annotations,
+        labels: deployment.metadata.labels,
+        namespace: deployment.metadata.namespace,
         creationTimestamp: timeAgo(deployment.metadata.creationTimestamp),
       }));
       res.json(deployments);
@@ -104,7 +117,9 @@ app.get('/api/v1/statefulsets/:namespace', authenticateToken, async (req, res) =
           name: statefulSet.metadata.name,
           replicas: statefulSet.spec.replicas,
           currentReplicas: statefulSet.status.currentReplicas,
-          meta: statefulSet.metadata,
+          annotations: statefulSet.metadata.annotations,
+          labels: statefulSet.metadata.labels,
+          namespace: statefulSet.metadata.namespace,
           creationTimestamp: timeAgo(statefulSet.metadata.creationTimestamp)
       }));
       res.json(statefulSets);
@@ -127,15 +142,21 @@ function timeAgo(timestamp) {
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
 
   if (seconds < 60) {
-    return `${seconds} seconds ago`;
+      return `${seconds} seconds ago`;
   } else if (minutes < 60) {
-    return `${minutes} minutes ago`;
+      return `${minutes} minutes ago`;
   } else if (hours < 24) {
-    return `${hours} hours ago`;
+      return `${hours} hours ago`;
+  } else if (days < 30) {
+      return `${days} days ago`;
+  } else if (months < 12) {
+      return `${months} months ago`;
   } else {
-    // If the difference is greater than 24 hours, return the original timestamp
-    return created.toLocaleString();
+      return `${years} years ago`;
   }
 }
