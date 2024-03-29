@@ -107,9 +107,12 @@ app.get('/api/v1/pods/:namespace/:podName/logs', authenticateToken, async (req, 
   try {
       // Fetch logs for the pod
       const logsResponse = await k8sApi.readNamespacedPodLog(podName, namespace);
-      const logs = logsResponse.body;
-
-      res.send(logs);
+      const logs = logsResponse.body.split('\n').map(log => {
+          const timestamp = new Date().toISOString(); // Replace with actual timestamp if available in the log
+          return `${timestamp} ${log}`;
+      });
+    
+      res.send(logs.join('\n'));
   } catch (error) {
       console.error('Error fetching logs for pod:', error);
       res.status(500).json({ error: 'Internal server error' });
