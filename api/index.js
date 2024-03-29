@@ -46,9 +46,9 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
     const pods = podsResponse.body.items.map((pod) => ({
       name: pod.metadata.name,
       image: pod.spec.containers[0].image,
-      annotations: deployment.metadata.annotations,
-      labels: deployment.metadata.labels,
-      namespace: deployment.metadata.namespace,
+      annotations: pod.metadata.annotations,
+      labels: pod.metadata.labels,
+      namespace: pod.metadata.namespace,
       pod,
       creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
     }));
