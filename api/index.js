@@ -105,7 +105,7 @@ app.get('/api/v1/events/:namespace/:pod', authenticateToken, async (req, res) =>
   const podName = req.params.pod;
 
   try {
-      const eventsResponse = await k8sApi.listNamespacedEvent(namespace, undefined, undefined, undefined, `involvedObject.namespace=${podName}`);
+      const eventsResponse = await k8sApi.listNamespacedEvent(namespace, undefined, undefined, undefined, `involvedObject.name=${podName}`);
       const events = eventsResponse.body.items.map(event => ({
           message: event.message,
           reason: event.reason,
