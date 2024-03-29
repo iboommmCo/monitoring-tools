@@ -29,42 +29,66 @@ app.get("/", (req, res) => {
   res.json({ status: "service is running." });
 });
 
-// Route to get pod details
-// Route to get pods and events related to pods
-app.get('/api/v1/pods/:namespace', authenticateToken, async (req, res) => {
+// Route to get pods grouped by deployment with events
+app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
 
   try {
-      // Fetch pod details
-      const podsResponse = await k8sApi.listNamespacedPod(namespace);
-      const pods = [];
-      for (const pod of podsResponse.body.items) {
-          const podDetails = {
-              name: pod.metadata.name,
-              image: pod.spec.containers[0].image,
-              annotations: pod.metadata.annotations,
-              labels: pod.metadata.labels,
-              namespace: pod.metadata.namespace,
-              creationTimestamp: timeAgo(pod.metadata.creationTimestamp)
-          };
+    // Fetch deployments
+    const deploymentsResponse = await k8sAppsApi.listNamespacedDeployment(
+      namespace
+    );
+    const deployments = deploymentsResponse.body.items.reduce(
+      (acc, deployment) => {
+        acc[deployment.metadata.name] = {
+          pods: [],
+          events: [],
+        };
+        return acc;
+      },
+      {}
+    );
 
-          // Fetch events related to the pod
-          const eventsResponse = await k8sApi.listNamespacedEvent(namespace, undefined, undefined, undefined, undefined, `involvedObject.name=${pod.metadata.name}`);
-          const events = eventsResponse.body.items.map(event => ({
-              message: event.message,
-              reason: event.reason,
-              type: event.type,
-              timestamp: event.lastTimestamp,
-          }));
+    // Fetch pods and events
+    const podsResponse = await k8sApi.listNamespacedPod(namespace);
+    for (const pod of podsResponse.body.items) {
+      const deploymentName = pod.metadata.ownerReferences.find(
+        (ref) => ref.kind === "Deployment"
+      ).name;
+      const podDetails = {
+        name: pod.metadata.name,
+        image: pod.spec.containers[0].image,
+        creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
+      };
 
-          podDetails.events = events; // Assign events to podDetails
-          pods.push(podDetails);
-      }
+      // Fetch events related to the pod
+      const eventsResponse = await k8sApi.listNamespacedEvent(
+        namespace,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        `involvedObject.name=${pod.metadata.name}`
+      );
+      const events = eventsResponse.body.items.map((event) => ({
+        message: event.message,
+        reason: event.reason,
+        type: event.type,
+        timestamp: event.lastTimestamp,
+      }));
 
-      res.json({ pods });
+      // Add pod and its events to the deployment
+      deployments[deploymentName].pods.push(podDetails);
+      deployments[deploymentName].events.push(...events);
+    }
+
+    res.json({ deployments });
   } catch (error) {
-      console.error('Error fetching pods and events:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error(
+      "Error fetching pods grouped by deployment with events:",
+      error
+    );
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
