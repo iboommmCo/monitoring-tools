@@ -25,7 +25,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-app.get("/", () => {
+app.get("/", (req, res) => {
   res.json({ status: "service is running." });
 });
 
@@ -38,8 +38,8 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
     const pods = podsResponse.body.items.map((pod) => ({
       name: pod.metadata.name,
       image: pod.spec.containers[0].image,
-      creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
       meta: pod.metadata,
+      creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
     }));
     res.json(pods);
   } catch (error) {
@@ -64,6 +64,7 @@ app.get(
         replicas: deployment.spec.replicas,
         availableReplicas: deployment.status.availableReplicas,
         meta: deployment.metadata,
+        creationTimestamp: timeAgo(deployment.metadata.creationTimestamp),
       }));
       res.json(deployments);
     } catch (error) {
@@ -72,6 +73,46 @@ app.get(
     }
   }
 );
+
+// Route to get jobs
+app.get('/api/v1/jobs/:namespace', authenticateToken, async (req, res) => {
+  const namespace = req.params.namespace;
+
+  try {
+      const jobsResponse = await k8sBatchApi.listNamespacedJob(namespace);
+      const jobs = jobsResponse.body.items.map(job => ({
+          name: job.metadata.name,
+          completions: job.spec.completions,
+          parallelism: job.spec.parallelism,
+          creationTimestamp: timeAgo(job.metadata.creationTimestamp),
+          meta: job.metadata
+      }));
+      res.json(jobs);
+  } catch (error) {
+      console.error('Error fetching jobs:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to get statefulsets
+app.get('/api/v1/statefulsets/:namespace', authenticateToken, async (req, res) => {
+  const namespace = req.params.namespace;
+
+  try {
+      const statefulSetsResponse = await k8sAppsApi.listNamespacedStatefulSet(namespace);
+      const statefulSets = statefulSetsResponse.body.items.map(statefulSet => ({
+          name: statefulSet.metadata.name,
+          replicas: statefulSet.spec.replicas,
+          currentReplicas: statefulSet.status.currentReplicas,
+          meta: statefulSet.metadata,
+          creationTimestamp: timeAgo(statefulSet.metadata.creationTimestamp)
+      }));
+      res.json(statefulSets);
+  } catch (error) {
+      console.error('Error fetching statefulsets:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
