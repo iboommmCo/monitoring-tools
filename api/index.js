@@ -17,8 +17,7 @@ const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
 // Middleware for API token authentication
 const authenticateToken = (req, res, next) => {
   const token = req.headers["authorization"];
-  // if (token === 'Bearer YOUR_API_TOKEN') {
-  if (true) {
+  if (token === `Bearer ${process.env.TOKEN ?? 'demo'}`) {
     next();
   } else {
     res.sendStatus(403);
