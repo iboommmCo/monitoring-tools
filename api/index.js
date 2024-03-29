@@ -111,7 +111,7 @@ app.get('/api/v1/events/:namespace/:pod', authenticateToken, async (req, res) =>
           reason: event.reason,
           type: event.type,
           event: {...event},
-          timestamp: timeAgo(event.lastTimestamp),
+          timestamp: timeAgo(event.lastTimestamp ?? event.eventTime),
       }));
       res.json(events);
   } catch (error) {
