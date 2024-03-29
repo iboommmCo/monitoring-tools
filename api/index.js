@@ -41,24 +41,6 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
         image: pod.spec.containers[0].image,
         creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
       };
-
-      // Fetch events related to the pod
-      const eventsResponse = await k8sApi.listNamespacedEvent(
-        namespace,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        `involvedObject.name=${pod.metadata.name}`
-      );
-      const events = eventsResponse.body.items.map((event) => ({
-        message: event.message,
-        reason: event.reason,
-        type: event.type,
-        timestamp: event.lastTimestamp,
-      }));
-      console.log('events', events)
-      podDetails.events = events; // Assign events to podDetails
       pods.push(podDetails);
     }
     res.json({ pods });
@@ -115,6 +97,27 @@ app.get("/api/v1/jobs/:namespace", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Route to get events related to pods
+app.get('/api/v1/events/:namespace/:pod', authenticateToken, async (req, res) => {
+  const namespace = req.params.namespace;
+  const podName = req.params.pod;
+
+  try {
+      const eventsResponse = await k8sApi.listNamespacedEvent(namespace, undefined, undefined, undefined, undefined, `involvedObject.name=${podName}`);
+      const events = eventsResponse.body.items.map(event => ({
+          message: event.message,
+          reason: event.reason,
+          type: event.type,
+          timestamp: timeAgo(event.lastTimestamp),
+      }));
+      res.json(events);
+  } catch (error) {
+      console.error('Error fetching events:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Route to get statefulsets
 app.get(
