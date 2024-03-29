@@ -1,0 +1,16 @@
+deployment:
+  name: monitoring-tools
+  imageName: iboommm/k8s-monitoring-api
+  tag: 1.0.0-15e2a8f9434b052ad07e37f3c577da90d9747952
+  replicas: 1
+  port: 3000
+  pullPolicy: Always  # Add pullPolicy here
+
+serviceAccount:
+  name: tdg-devops-monitoring
+
+service:
+  name: monitoring-tools
+  ports:
+    - port: 80
+      targetPort: 3000

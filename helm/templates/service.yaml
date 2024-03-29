@@ -1,0 +1,13 @@
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: app
+spec:
+  selector:
+    app: monitoring-tools
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.ports.port }}
+      targetPort: {{ .Values.service.ports.targetPort }}

@@ -1,0 +1,39 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.name }}
+  namespace: app
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: monitoring-tools
+  template:
+    metadata:
+      labels:
+        app: monitoring-tools
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+      - name: monitoring-tools
+        image: {{ .Values.deployment.imageName }}:{{ .Values.deployment.tag }}
+        imagePullPolicy: {{ .Values.deployment.pullPolicy }}  # Use pullPolicy from values.yaml
+        ports:
+        - containerPort: {{ .Values.deployment.port }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.deployment.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.deployment.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
