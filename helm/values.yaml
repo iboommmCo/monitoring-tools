@@ -27,7 +27,7 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "monitoring-api-sa"
+  name: "k8s-monitoring-api-sa"
 
 podAnnotations: {}
 podLabels: {}
