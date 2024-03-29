@@ -2,7 +2,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: list-resources
+  name: {{ include "monitoring-api.fullname" . }}-list-resources
+  namespace: {{ .Values.namespace }}
 rules:
 - apiGroups: [""]
   resources: ["pods"]
