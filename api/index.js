@@ -32,27 +32,36 @@ app.get("/", (req, res) => {
 // Route to get pod details
 app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
-
+  const podsResponse = await k8sApi.listNamespacedPod(namespace);
+  const pods = [];
   try {
-    const podsResponse = await k8sApi.listNamespacedPod(namespace);
-    const pods = podsResponse.body.items.map((pod) => ({
-      name: pod.metadata.name,
-      image: pod.spec.containers[0].image,
-      annotations: pod.metadata.annotations,
-      labels: pod.metadata.labels,
-      namespace: pod.metadata.namespace,
-      creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
-    }));
-     // Fetch events related to pods
-     const eventsResponse = await k8sApi.listNamespacedEvent(namespace);
-     const events = eventsResponse.body.items.map(event => ({
-         message: event.message,
-         reason: event.reason,
-         type: event.type,
-         timestamp: event.lastTimestamp,
-     }));
+    for (const pod of podsResponse.body.items) {
+      const podDetails = {
+        name: pod.metadata.name,
+        image: pod.spec.containers[0].image,
+        creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
+      };
 
-    res.json({...pods, events});
+      // Fetch events related to the pod
+      const eventsResponse = await k8sApi.listNamespacedEvent(
+        namespace,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        `involvedObject.name=${pod.metadata.name}`
+      );
+      const events = eventsResponse.body.items.map((event) => ({
+        message: event.message,
+        reason: event.reason,
+        type: event.type,
+        timestamp: event.lastTimestamp,
+      }));
+
+      podDetails.events = events; // Assign events to podDetails
+      pods.push(podDetails);
+    }
+    res.json({ pods });
   } catch (error) {
     console.error("Error fetching pods:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -88,46 +97,54 @@ app.get(
 );
 
 // Route to get jobs
-app.get('/api/v1/jobs/:namespace', authenticateToken, async (req, res) => {
+app.get("/api/v1/jobs/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
 
   try {
-      const jobsResponse = await k8sBatchApi.listNamespacedJob(namespace);
-      const jobs = jobsResponse.body.items.map(job => ({
-          name: job.metadata.name,
-          completions: job.spec.completions,
-          parallelism: job.spec.parallelism,
-          creationTimestamp: timeAgo(job.metadata.creationTimestamp),
-          meta: job.metadata
-      }));
-      res.json(jobs);
+    const jobsResponse = await k8sBatchApi.listNamespacedJob(namespace);
+    const jobs = jobsResponse.body.items.map((job) => ({
+      name: job.metadata.name,
+      completions: job.spec.completions,
+      parallelism: job.spec.parallelism,
+      creationTimestamp: timeAgo(job.metadata.creationTimestamp),
+      meta: job.metadata,
+    }));
+    res.json(jobs);
   } catch (error) {
-      console.error('Error fetching jobs:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching jobs:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Route to get statefulsets
-app.get('/api/v1/statefulsets/:namespace', authenticateToken, async (req, res) => {
-  const namespace = req.params.namespace;
+app.get(
+  "/api/v1/statefulsets/:namespace",
+  authenticateToken,
+  async (req, res) => {
+    const namespace = req.params.namespace;
 
-  try {
-      const statefulSetsResponse = await k8sAppsApi.listNamespacedStatefulSet(namespace);
-      const statefulSets = statefulSetsResponse.body.items.map(statefulSet => ({
+    try {
+      const statefulSetsResponse = await k8sAppsApi.listNamespacedStatefulSet(
+        namespace
+      );
+      const statefulSets = statefulSetsResponse.body.items.map(
+        (statefulSet) => ({
           name: statefulSet.metadata.name,
           replicas: statefulSet.spec.replicas,
           currentReplicas: statefulSet.status.currentReplicas,
           annotations: statefulSet.metadata.annotations,
           labels: statefulSet.metadata.labels,
           namespace: statefulSet.metadata.namespace,
-          creationTimestamp: timeAgo(statefulSet.metadata.creationTimestamp)
-      }));
+          creationTimestamp: timeAgo(statefulSet.metadata.creationTimestamp),
+        })
+      );
       res.json(statefulSets);
-  } catch (error) {
-      console.error('Error fetching statefulsets:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    } catch (error) {
+      console.error("Error fetching statefulsets:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
-});
+);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
@@ -147,16 +164,16 @@ function timeAgo(timestamp) {
   const years = Math.floor(days / 365);
 
   if (seconds < 60) {
-      return `${seconds} seconds ago`;
+    return `${seconds} seconds ago`;
   } else if (minutes < 60) {
-      return `${minutes} minutes ago`;
+    return `${minutes} minutes ago`;
   } else if (hours < 24) {
-      return `${hours} hours ago`;
+    return `${hours} hours ago`;
   } else if (days < 30) {
-      return `${days} days ago`;
+    return `${days} days ago`;
   } else if (months < 12) {
-      return `${months} months ago`;
+    return `${months} months ago`;
   } else {
-      return `${years} years ago`;
+    return `${years} years ago`;
   }
 }
