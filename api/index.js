@@ -30,15 +30,21 @@ app.get("/", (req, res) => {
 });
 
 // Route to get pod details
+// Route to get pods and events related to pods
 app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
-  const podsResponse = await k8sApi.listNamespacedPod(namespace);
-  const pods = [];
+
   try {
+    // Fetch pod details
+    const podsResponse = await k8sApi.listNamespacedPod(namespace);
+    const pods = [];
     for (const pod of podsResponse.body.items) {
       const podDetails = {
         name: pod.metadata.name,
         image: pod.spec.containers[0].image,
+        annotations: deployment.metadata.annotations,
+        labels: deployment.metadata.labels,
+        namespace: deployment.metadata.namespace,
         creationTimestamp: timeAgo(pod.metadata.creationTimestamp),
       };
 
@@ -61,9 +67,10 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
       podDetails.events = events; // Assign events to podDetails
       pods.push(podDetails);
     }
+
     res.json({ pods });
   } catch (error) {
-    console.error("Error fetching pods:", error);
+    console.error("Error fetching pods and events:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
