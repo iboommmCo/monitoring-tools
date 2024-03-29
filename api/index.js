@@ -32,33 +32,10 @@ app.get("/", (req, res) => {
 // Route to get pod details
 app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
   const namespace = req.params.namespace;
-
+  const podsResponse = await k8sApi.listNamespacedPod(namespace);
+  const pods = [];
   try {
-    // Fetch deployments
-    const deploymentsResponse = await k8sAppsApi.listNamespacedDeployment(
-      namespace
-    );
-    const deployments = deploymentsResponse.body.items.reduce(
-      (acc, deployment) => {
-        acc[deployment.metadata.name] = {
-          pods: [],
-          events: [],
-        };
-        return acc;
-      },
-      {}
-    );
-
-    // Fetch pods and events
-    const podsResponse = await k8sApi.listNamespacedPod(namespace);
     for (const pod of podsResponse.body.items) {
-      const deploymentName =
-        pod.metadata.ownerReferences && pod.metadata.ownerReferences.length > 0
-          ? pod.metadata.ownerReferences.find(
-              (ref) => ref.kind === "Deployment"
-            ).name
-          : "Unknown Deployment";
-
       const podDetails = {
         name: pod.metadata.name,
         image: pod.spec.containers[0].image,
@@ -80,18 +57,13 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
         type: event.type,
         timestamp: event.lastTimestamp,
       }));
-
-      // Add pod and its events to the deployment
-      deployments[deploymentName].pods.push(podDetails);
-      deployments[deploymentName].events.push(...events);
+      console.log('events', events)
+      podDetails.events = events; // Assign events to podDetails
+      pods.push(podDetails);
     }
-
-    res.json({ deployments });
+    res.json({ pods });
   } catch (error) {
-    console.error(
-      "Error fetching pods grouped by deployment with events:",
-      error
-    );
+    console.error("Error fetching pods:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
