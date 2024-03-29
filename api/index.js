@@ -44,10 +44,30 @@ app.get("/api/v1/pods/:namespace", authenticateToken, async (req, res) => {
       };
       pods.push(podDetails);
     }
-    res.json({ pods });
+    res.json({ ...pods });
   } catch (error) {
     console.error("Error fetching pods:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Route to get logs for a specific pod
+app.get('/api/v1/pods/:namespace/:podName/logs', authenticateToken, async (req, res) => {
+  const namespace = req.params.namespace;
+  const podName = req.params.podName;
+
+  try {
+      // Fetch logs for the pod
+      const logsResponse = await k8sApi.readNamespacedPodLog(podName, namespace);
+      const logs = logsResponse.body.split('\n').map(log => {
+          const timestamp = new Date().toISOString(); // Replace with actual timestamp if available in the log
+          return `${timestamp} ${log}`;
+      });
+    
+      res.send(logs.join('\n'));
+  } catch (error) {
+      console.error('Error fetching logs for pod:', error);
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -99,25 +119,6 @@ app.get("/api/v1/jobs/:namespace", authenticateToken, async (req, res) => {
   }
 });
 
-// Route to get logs for a specific pod
-app.get('/api/v1/pods/:namespace/:podName/logs', authenticateToken, async (req, res) => {
-  const namespace = req.params.namespace;
-  const podName = req.params.podName;
-
-  try {
-      // Fetch logs for the pod
-      const logsResponse = await k8sApi.readNamespacedPodLog(podName, namespace);
-      const logs = logsResponse.body.split('\n').map(log => {
-          const timestamp = new Date().toISOString(); // Replace with actual timestamp if available in the log
-          return `${timestamp} ${log}`;
-      });
-    
-      res.send(logs.join('\n'));
-  } catch (error) {
-      console.error('Error fetching logs for pod:', error);
-      res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Route to get events related to pods
 app.get('/api/v1/events/:namespace/:pod', authenticateToken, async (req, res) => {
