@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: iboommm/k8s-monitoring-api
+  repository: iboommm/kaze-monitoring-api
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "1.0.0-15e2a8f9434b052ad07e37f3c577da90d9747952"
@@ -27,7 +27,7 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "k8s-monitoring-api-sa"
+  name: "kaze-monitoring-api-sa"
 
 podAnnotations: {}
 podLabels: {}
