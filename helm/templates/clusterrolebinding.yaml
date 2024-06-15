@@ -7,6 +7,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: {{ include "monitoring-api.serviceAccountName" . }}
+  namespace: {{ .Values.namespace }}
 roleRef:
   kind: ClusterRole
   name: {{ include "monitoring-api.fullname" . }}-list-resources
