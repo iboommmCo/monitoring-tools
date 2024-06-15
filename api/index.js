@@ -180,6 +180,23 @@ app.get(
   }
 );
 
+app.get("/api/v1/namespaces", authenticateToken, async (req, res) => {
+  try {
+    const namespacesResponse = await k8sApi.listNamespace();
+    const namespaces = namespacesResponse.body.items.map((ns) => ({
+      name: ns.metadata.name,
+      labels: ns.metadata.labels,
+      annotations: ns.metadata.annotations,
+      status: ns.status.phase,
+      creationTimestamp: timeAgo(ns.metadata.creationTimestamp),
+    }));
+    res.json(namespaces);
+  } catch (error) {
+    console.error("Error fetching namespaces:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
