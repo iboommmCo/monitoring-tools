@@ -8,7 +8,7 @@ image:
   repository: iboommm/kaze-monitoring-api
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "1.0.0-31627f72a1a786c0947ceedd48e62196f2076cd8"
+  tag: "1.0.0-42c5b62e9048eb27d48a721de6f1a9ec93c36b14"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -16,7 +16,7 @@ fullnameOverride: ""
 
 namespace: kaze
 env:
-  TOKEN: <API-TOKEN>
+  TOKEN: OC1Bd160Xbpe6hnXOpBN5kEXOAMTuSCs
 
 serviceAccount:
   # Specifies whether a service account should be created
